@@ -63,3 +63,13 @@ def verify_payment(request):
         payment.status = "Failed"
         payment.save()
         return Response({"status": "Payment failed"}, status=400)
+from .tasks import send_booking_confirmation_email
+
+class BookingViewSet(viewsets.ModelViewSet):
+    # ...
+
+    def perform_create(self, serializer):
+        booking = serializer.save(user=self.request.user)
+        listing_title = booking.listing.title
+        user_email = self.request.user.email
+        send_booking_confirmation_email.delay(user_email, listing_title)
